@@ -28,7 +28,13 @@ You can skip installing Pandoc if rendering in RStudio.
 Rendering the R makrdown files requires Pandoc. To install Pandoc for PowerShell, download and run the Windows `.msi` installer linked in the [official Pandoc installation guide](https://pandoc.org/installing.html#windows).
 The installer adds Pandoc to `PATH`. Open a new PowerShell window before rendering either notebook.
 
-If you need to convert a VCF to PLINK files for Part 2, download [PLINK 2 for Windows](https://www.cog-genomics.org/plink/2.0/) and place `plink2.exe` in `bin/`.
+Part 2 uses PLINK 2 for LD clumping against the 1000 Genomes reference panel.
+Download [PLINK 2 for Windows](https://www.cog-genomics.org/plink/2.0/) and place
+`plink2.exe` in a `bin/` folder at the repository root.
+
+If you start with raw 23andMe text, you also need `bcftools` and an indexed
+GRCh37 reference FASTA. We used `bcftools` 1.24. Source releases and build
+instructions are on the [official BCFtools downloads page](https://www.htslib.org/download/).
 
 ## 2. Get the input data
 
@@ -64,8 +70,11 @@ Open [`R/part1.Rmd`](R/part1.Rmd) in RStudio and click **Knit**.
 
 Use a single 23andMe sample you have permission to analyze. Place the GRCh37 PLINK files in your local `data/processed/` with a shared prefix such as `selected_sample_autosomes_GRCh37` and the extensions `.bed`, `.bim`, and `.fam`.
 
-If starting with a 23andMe text file, make a GRCh37 VCF using the [conversion tutorial](https://samtools.github.io/bcftools/howtos/convert.html).
-Replace the VCF path below with your local file. Then, run the command.
+If starting with a 23andMe text file, follow the
+[bcftools conversion tutorial](https://samtools.github.io/bcftools/howtos/convert.html)
+with an indexed GRCh37 reference FASTA. Use `-Ov -o selected_sample.GRCh37.vcf`
+in the tutorial command to write a VCF. Set the VCF path below to your local
+file and run the PLINK command.
 
 ```powershell
 # Run in powershell from the repository root
