@@ -171,3 +171,41 @@ score_height_chromosome <- function(clumped, chromosome) {
 
   list(reference_scores = reference_scores, tiffany_score = tiffany_score)
 }
+
+# Combine height scores per across chromosomes to get one final score per person
+run_height_prs <- function(output_dir, chromosomes = 1:22) {
+  if (dir.exists(output_dir)) {
+    stop("Choose a new output directory for the clumping results.")
+  }
+
+  gwas <- read_height_gwas()
+  matches <- match_height_positions(gwas)
+  aligned <- align_height_alleles(matches)
+
+  reference_totals <- NULL
+  tiffany_total <- 0
+  n_snps <- 0
+
+  # For every chromosome, clump and then score
+  # Then add up the height scores for each individual
+  for (chromosome in chromosomes) {
+    clumped <- clump_height_chromosome(aligned, chromosome, output_dir)
+    scores <- score_height_chromosome(clumped, chromosome)
+
+    if (is.null(reference_totals)) {
+      reference_totals <- scores$reference_scores
+    } else {
+      reference_totals <- reference_totals +
+        scores$reference_scores[names(reference_totals)]
+    }
+
+    tiffany_total <- tiffany_total + scores$tiffany_score
+    n_snps <- n_snps + nrow(clumped)
+  }
+
+  list(
+    reference_scores = reference_totals,
+    tiffany_score = tiffany_total,
+    n_snps = n_snps
+  )
+}
