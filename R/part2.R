@@ -108,3 +108,41 @@ align_height_alleles <- function(matches) {
 
   aligned
 }
+
+# Clump SNPs to keep only the most significant (lowest p-valiue)
+# This is done to account for associations with nearby SNPs
+# Returns only the SNPs which were selected through clumping (lead SNPs)
+clump_height_chromosome <- function(aligned, chromosome, output_dir) {
+  variants <- aligned[aligned$CHR == chromosome, , drop = FALSE]
+
+  reference_prefix <- file.path(
+    "data/processed/LDREF", paste0("1000G.EUR.", chromosome)
+  )
+  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+  output_prefix <- file.path(output_dir, paste0("chr", chromosome))
+  clump_input <- paste0(output_prefix, "_clump_input.tsv")
+
+  write.table(
+    data.frame(ID = variants$reference_snp, P = variants$P),
+    clump_input,
+    sep = "\t", quote = FALSE, row.names = FALSE
+  )
+
+  # Clumping done with plink2's clump command
+  status <- system2("bin/plink2.exe", c(
+    "--bfile", shQuote(reference_prefix),
+    "--clump", shQuote(clump_input),
+    "--clump-p1", "0.001",
+    "--clump-r2", "0.1",
+    "--clump-kb", "250",
+    "--out", shQuote(output_prefix)
+  ))
+
+  if (status != 0) {
+    stop("PLINK clumping failed on chromosome ", chromosome)
+  }
+
+  clumps <- read.delim(paste0(output_prefix, ".clumps"))
+  lead_rows <- match(clumps$ID, variants$reference_snp)
+  variants[lead_rows, , drop = FALSE]
+}
