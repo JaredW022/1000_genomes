@@ -1,0 +1,13 @@
+# Local agent instructions
+/AGENTS.md
+
+# Local PLINK executable
+/bin/plink2.exe
+
+# Local datasets and derived data
+/data/
+
+# Data archives, including downloads placed outside data/
+*.zip
+*.gz
+*.bz2
