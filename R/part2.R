@@ -68,3 +68,43 @@ match_height_positions <- function(gwas) {
   )
 }
 
+# Keep SNPs whose reference alleles match the GWAS and for which Tiffany
+# has a nonmissing genotype we can use to count the GWAS effect allele.
+align_height_alleles <- function(matches) {
+  tiffany_genotypes <- BEDMatrix::BEDMatrix(
+    "data/processed/Tiffany_autosomes_GRCh37.bed",
+    simple_names = TRUE
+  )
+  # Allele order determined by the .bim file
+  tiffany_a1_copies <- as.numeric(
+    tiffany_genotypes[1, matches$tiffany_bim_row, drop = FALSE]
+  )
+
+  reference_matches <-
+    (matches$reference_a1 == matches$A1 & matches$reference_a2 == matches$A2) |
+    (matches$reference_a1 == matches$A2 & matches$reference_a2 == matches$A1)
+
+  tiffany_matches <-
+    (matches$tiffany_a1 == matches$A1 & matches$tiffany_a2 == matches$A2) |
+    (matches$tiffany_a1 == matches$A2 & matches$tiffany_a2 == matches$A1)
+
+  # A dot can mark an unlisted allele in a homozygous call.
+  tiffany_homozygous <- matches$tiffany_a1 == "." &
+    tiffany_a1_copies == 0 &
+    (matches$tiffany_a2 == matches$A1 | matches$tiffany_a2 == matches$A2)
+
+  keep <- reference_matches & !is.na(tiffany_a1_copies) &
+    (tiffany_matches | tiffany_homozygous)
+
+  aligned <- matches[keep, , drop = FALSE]
+  a1_copies <- tiffany_a1_copies[keep]
+
+  # If the effect allele is in Tiffany's A2 column, count copies as 2 minus A1.
+  aligned$tiffany_effect_copies <- ifelse(
+    aligned$tiffany_a2 == aligned$A1,
+    2 - a1_copies,
+    a1_copies
+  )
+
+  aligned
+}
