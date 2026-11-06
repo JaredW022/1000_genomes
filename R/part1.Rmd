@@ -274,12 +274,33 @@ run_part1 <- function(output_dir, chromosomes = 1:22) {
 }
 ```
 
-## Single-SNP example anda boxplo
+## Single-SNP example anda boxplot
+
+```{r chromosome-22-results, include=FALSE}
+required_results <- c(
+  "COMPLETE.txt", "top_hit_per_gene.tsv", "chr22_cis_eqtl.tsv.gz",
+  "chr22_matched_samples.tsv"
+)
+derived_dir <- file.path(project_root, "data/derived")
+candidate_dirs <- c(
+  file.path(derived_dir, "part1_path_check_679c41a06a0a"),
+  list.files(derived_dir, pattern = "^part1_notebook_chr22_", full.names = TRUE)
+)
+completed_dirs <- candidate_dirs[vapply(candidate_dirs, function(path) {
+  all(file.exists(file.path(path, required_results)))
+}, logical(1))]
+
+if (length(completed_dirs)) {
+  run_dir <- completed_dirs[[1]]
+} else {
+  run_dir <- tempfile("part1_notebook_chr22_", tmpdir = derived_dir)
+  run_part1(run_dir, chromosomes = 22)
+}
+```
 
 ```{r}
 inputs <- read_part1_inputs(chromosomes = 22)
-output_dir <- file.path(project_root, "data/derived/part1_path_check_679c41a06a0a")
-hits <- read.delim(file.path(output_dir, "top_hit_per_gene.tsv"))
+hits <- read.delim(file.path(run_dir, "top_hit_per_gene.tsv"))
 snp_result <- hits[hits$gene_symbol == "IL17RA" & hits$snp == "rs2229151", ]
 
 genotype_file <- file.path(part1_genotype_dir, "1000G.EUR.22.bed")
@@ -314,18 +335,11 @@ lines(
 ```{r}
 library(EnsDb.Hsapiens.v75)
 
-run_dir <- "data/derived/part1_path_check_679c41a06a0a"
-
 results <- read.delim(file.path(run_dir, "chr22_cis_eqtl.tsv.gz"))
 il17ra <- results[results$gene_symbol == "IL17RA", ]
 samples <- read.delim(
   file.path(run_dir, "chr22_matched_samples.tsv"),
   colClasses = "character"
-)
-
-genotypes <- BEDMatrix::BEDMatrix(
-  "data/processed/LDREF/1000G.EUR.22.bed",
-  simple_names = TRUE
 )
 
 # Calculate LD with the SNP that has the lowest raw p-value.
