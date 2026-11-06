@@ -41,11 +41,9 @@ Put the inputs for the analyses you want to run in `data/raw/`.
 | `gene_annot.txt.gz` | Get the supplied annotation from the mentor |
 | `Height.gwas.txt.gz` | [Height GWAS download](https://drive.google.com/file/d/1RWjk49QNZj9zvJHc9X_wyZ51fdy6xQjv/view) |
 
-Leave the `.gz` files compressed. Extract `LDREF.tar.bz2` and place the
-extracted `LDREF` folder in `data/processed/`.
+Leave the `.gz` files compressed. Extract `LDREF.tar.bz2` and place the extracted `LDREF` folder in `data/processed/`.
 
-Check that `data/processed/LDREF/` contains the `.bed`, `.bim`, and `.fam` files
-for each of `1000G.EUR.1` through `1000G.EUR.22`.
+Check that `data/processed/LDREF/` contains the `.bed`, `.bim`, and `.fam` files for each of `1000G.EUR.1` through `1000G.EUR.22`.
 
 ## 3. Run Part 1
 
@@ -56,10 +54,7 @@ Run the analysis across all 22 autosomes.
 Rscript --vanilla -e "source('R/part1.R'); run_part1('data/derived/part1')"
 ```
 
-We selected the output folder `data/derived/part1`. Check
-that `COMPLETE.txt`, `chromosome_summary.tsv`, and `top_hit_per_gene.tsv`
-appear in that folder. The per-chromosome association results are saved as
-`chr*_cis_eqtl.tsv.gz`.
+We selected the output folder `data/derived/part1`. Check that `COMPLETE.txt`, `chromosome_summary.tsv`, and `top_hit_per_gene.tsv` appear in that folder. The per-chromosome association results are saved as `chr*_cis_eqtl.tsv.gz`.
 
 ### Reproduce the Part 1 notebook figures
 
