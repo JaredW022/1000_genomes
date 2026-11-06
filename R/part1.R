@@ -205,6 +205,7 @@ map_part1_chromosome <- function(inputs, chromosome, output_dir) {
     )
   )
 }
+
 run_part1 <- function(output_dir, chromosomes = 1:22) {
   if (dir.exists(output_dir)) {
     stop("Output directory already exists: ", output_dir,
