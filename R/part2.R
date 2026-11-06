@@ -146,3 +146,28 @@ clump_height_chromosome <- function(aligned, chromosome, output_dir) {
   lead_rows <- match(clumps$ID, variants$reference_snp)
   variants[lead_rows, , drop = FALSE]
 }
+
+score_height_chromosome <- function(clumped, chromosome) {
+  reference_file <- file.path(
+    "data/processed/LDREF",
+    paste0("1000G.EUR.", chromosome, ".bed")
+  )
+  genotypes <- BEDMatrix::BEDMatrix(reference_file, simple_names = TRUE)
+
+  # Representing 0, 1, 2 copies of GWAS effect (reference) allele
+  # One row per individual, one column per SNP
+  effect_copies <- as.matrix(
+    genotypes[, clumped$reference_snp, drop = FALSE]
+  )
+
+  # BEDMatrix counts reference A1. Switch counts when the GWAS effect allele is A2
+  effect_is_a2 <- clumped$reference_a2 == clumped$A1
+  effect_copies[, effect_is_a2] <- 2 - effect_copies[, effect_is_a2, drop = FALSE]
+
+  # Sum the weighted effect-allele counts to get one PRS per person
+  reference_scores <- as.numeric(effect_copies %*% clumped$weight)
+  names(reference_scores) <- rownames(genotypes)
+  tiffany_score <- sum(clumped$tiffany_effect_copies * clumped$weight)
+
+  list(reference_scores = reference_scores, tiffany_score = tiffany_score)
+}
