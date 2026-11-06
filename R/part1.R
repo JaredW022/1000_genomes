@@ -58,9 +58,7 @@ fit_cis_regressions <- function(genotypes, expression, variants) {
 
   # Keep SNPs where the number of copies of the effect allele differs across individuals.
   has_variance <- apply(X, 2, var) > 0
-  if (!any(has_variance)) {
-    return(NULL)
-  }
+  if (!any(has_variance)) return(NULL)
   # Build feature vector
   X <- X[, has_variance, drop = FALSE]
   variants <- variants[has_variance, , drop = FALSE]
@@ -118,10 +116,11 @@ map_part1_chromosome <- function(inputs, chromosome, output_dir) {
   bim$BP <- as.numeric(bim$BP)
 
   # Match genotype and expression samples in genotype file order.
-  shared <- fam$IID[fam$IID %in% inputs$sample_ids]
+  has_expression_sample <- !is.na(match(fam$IID, inputs$sample_ids))
+  shared <- fam$IID[has_expression_sample]
 
   # Open the genotype matrix and find the rows for the matched samples.
-  genotypes <- BEDMatrix::BEDMatrix(paste0(prefix, ".bed"), simple_names = TRUE)
+  genos <- BEDMatrix::BEDMatrix(paste0(prefix, ".bed"), simple_names = TRUE)
   genotype_rows <- match(shared, fam$IID)
   # Select genes on this chromosome with expression data.
   genes <- inputs$genes[inputs$genes$CHR == chromosome & inputs$genes$has_expression, , drop = FALSE]
@@ -148,28 +147,22 @@ map_part1_chromosome <- function(inputs, chromosome, output_dir) {
     # Testing needs 3+ usable expression values that vary.
     # If nearby SNPs exist but none vary in allele count, mark "no_testable_variants".
     stats <- NULL
-    status <- if (!length(cols)) {
-      "no_cis_variants"
-    } else {
-      "no_testable_variants"
-    }
+    status <- if (!length(cols)) "no_cis_variants" else "no_testable_variants"
     if (sum(is.finite(y)) < 3L) {
       status <- "insufficient_expression"
     } else if (var(y[is.finite(y)]) == 0) {
       status <- "constant_expression"
     } else if (length(cols)) {
-      X <- as.matrix(genotypes[genotype_rows, cols, drop = FALSE])
+      X <- as.matrix(genos[genotype_rows, cols, drop = FALSE])
       stats <- fit_cis_regressions(X, y, bim[cols, , drop = FALSE])
-      if (!is.null(stats)) {
-        status <- "tested"
-      }
+      if (!is.null(stats)) status <- "tested"
     }
 
     # Record how many SNPs were found and tested and why testing was skipped, if applicable.
-    n_tested <- if (is.null(stats)) {
-      0 
+    if (is.null(stats)) {
+      n_tested <- 0
     } else {
-      nrow(stats)
+      n_tested <- nrow(stats)
     }
     summaries[[i]] <- data.frame(chromosome = chromosome, gene_id = gene$SYM,
                                  gene_symbol = gene$ID, n_cis_variants = length(cols),
@@ -192,58 +185,64 @@ map_part1_chromosome <- function(inputs, chromosome, output_dir) {
   # Save the per-gene summary and return the top hits and chromosome totals.
   summaries <- do.call(rbind, summaries)
   write_part1_table(summaries, file.path(output_dir, paste0("chr", chromosome, "_gene_summary.tsv")))
-  list(top_hits = if (length(top_hits)) {
-         do.call(rbind, top_hits)
-       } else {
-         NULL
-       },
-       summary = data.frame(chromosome = chromosome, n_genotype_samples = nrow(fam),
-                            n_matched_samples = length(shared), n_variants = nrow(bim),
-                            n_genes_attempted = nrow(genes), n_genes_tested = sum(summaries$status == "tested"),
-                            n_pairs_tested = total_pairs))
-}
 
-run_part1 <- function(output_dir, chromosomes = 1:22) {
-  if (!requireNamespace("BEDMatrix", quietly = TRUE)) {
-    stop('Install BEDMatrix first: install.packages("BEDMatrix")')
+  top_hits_table <- if (length(top_hits) > 0) {
+    do.call(rbind, top_hits)
+  } else {
+    NULL
   }
+
+  list(
+    top_hits = top_hits_table,
+    summary = data.frame(
+      chromosome = chromosome,
+      n_genotype_samples = nrow(fam),
+      n_matched_samples = length(shared),
+      n_variants = nrow(bim),
+      n_genes_attempted = nrow(genes),
+      n_genes_tested = sum(summaries$status == "tested"),
+      n_pairs_tested = total_pairs
+    )
+  )
+}
+run_part1 <- function(output_dir, chromosomes = 1:22) {
   if (dir.exists(output_dir)) {
     stop("Output directory already exists: ", output_dir,
          ". Choose a new output_dir for a fresh run.")
   }
+  
+  # Load expression and gene annotations, then create the output directory.
   inputs <- read_part1_inputs(chromosomes)
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-  run_settings <- list(
-    expression_file = part1_expression_file,
-    annotation_file = part1_annotation_file,
-    genotype_dir = part1_genotype_dir,
-    cis_window_bp = part1_cis_window_bp,
-    chromosomes = chromosomes,
-    output_dir = output_dir
-  )
-  dput(run_settings, file = file.path(output_dir, "config_used.R"))
-  writeLines(capture.output(sessionInfo()), file.path(output_dir, "session_info.txt"))
-  write_part1_table(inputs$genes, file.path(output_dir, "gene_inventory.tsv"))
+
+  # Creates a list for each chromosome
+  # Result is poplated from our map function
   results <- vector("list", length(chromosomes))
   for (i in seq_along(chromosomes)) {
     results[[i]] <- map_part1_chromosome(inputs, chromosomes[i], output_dir)
   }
-  summary <- do.call(rbind, lapply(results, `[[`, "summary"))
+  
+  # Combine the per-chromosome summaries into one table.
+  summary <- NULL
+  for (chromosome_result in results) {
+    summary <- rbind(summary, chromosome_result$summary)
+  }
+
   total_pairs <- sum(summary$n_pairs_tested)
   if (!total_pairs) {
     stop("No associations were tested; inspect per-chromosome gene summaries.")
   }
-  threshold <- 0.05 / total_pairs
-  top_hits <- do.call(rbind, lapply(results, `[[`, "top_hits"))
-  top_hits$bonferroni_significant_in_run <- top_hits$p_value < threshold
+
+  top_hits <- NULL
+  for (chromosome_result in results) {
+    top_hits <- rbind(top_hits, chromosome_result$top_hits)
+  }
+
   write_part1_table(summary, file.path(output_dir, "chromosome_summary.tsv"))
   write_part1_table(top_hits, file.path(output_dir, "top_hit_per_gene.tsv"))
-  write_part1_table(data.frame(n_pairs_tested = total_pairs, familywise_alpha = 0.05,
-                               bonferroni_p_threshold = threshold),
-                    file.path(output_dir, "multiple_testing_summary.tsv"))
   writeLines("All configured chromosomes completed.", file.path(output_dir, "COMPLETE.txt"))
-  cat("\nCompleted", nrow(summary), "chromosomes and", total_pairs, "SNP-gene tests.\n")
-  cat("Bonferroni threshold for this run:", format(threshold, scientific = TRUE), "\n")
-  cat("Outputs:", output_dir, "\n")
+
+  print(head(summary))
   invisible(summary)
 }
+         
