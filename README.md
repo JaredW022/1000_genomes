@@ -10,8 +10,7 @@ Install BEDMatrix from the R console to run either analysis.
 install.packages("BEDMatrix")
 ```
 
-To render either notebook, install `rmarkdown`. The Part 2 notebook also
-uses `ggplot2`.
+To render either notebook, install `rmarkdown`, as well as `ggplot2` for rendering plots.
 
 ```r
 install.packages(c("rmarkdown", "ggplot2"))
@@ -29,16 +28,15 @@ Rendering the R makrdown files requires Pandoc. To install Pandoc for PowerShell
 The installer adds Pandoc to `PATH`. Open a new PowerShell window before rendering either notebook.
 
 Part 2 uses PLINK 2 for LD clumping against the 1000 Genomes reference panel.
-Download [PLINK 2 for Windows](https://www.cog-genomics.org/plink/2.0/) and place
-`plink2.exe` in a `bin/` folder at the repository root.
+Download [PLINK 2](https://www.cog-genomics.org/plink/2.0/) and place `plink2` (`plink2.exe` for Windows) in a `bin/` folder at the repository root.
 
-If you start with raw 23andMe text, you also need `bcftools` and an indexed
-GRCh37 reference FASTA. We used `bcftools` 1.24. Source releases and build
-instructions are on the [official BCFtools downloads page](https://www.htslib.org/download/).
+If you start with raw 23andMe text, you also need `bcftools` (version 1.24) and an indexed
+GRCh37 reference FASTA.
+Source releases and build instructions are on the [official BCFtools downloads page](https://www.htslib.org/download/).
 
 ## 2. Get the input data
 
-Put the inputs for the analyses you want to run in `data/raw/`.
+Inputs data for the analyses should be placed in `data/raw/`.
 
 | File | Source |
 | --- | --- |
@@ -60,7 +58,7 @@ Run the analysis across all 22 autosomes.
 Rscript --vanilla -e "source('R/part1.R'); run_part1('data/derived/part1')"
 ```
 
-We selected the output folder `data/derived/part1`. Check that `COMPLETE.txt`, `chromosome_summary.tsv`, and `top_hit_per_gene.tsv` appear in that folder. The per-chromosome association results are saved as `chr*_cis_eqtl.tsv.gz`.
+The default output folder is located at `data/derived/part1`. Check that `COMPLETE.txt`, `chromosome_summary.tsv`, and `top_hit_per_gene.tsv` appear in that folder. The per-chromosome association results are saved as `chr*_cis_eqtl.tsv.gz`.
 
 ### Reproduce the Part 1 notebook figures
 
@@ -77,7 +75,7 @@ in the tutorial command to write a VCF. Set the VCF path below to your local
 file and run the PLINK command.
 
 ```powershell
-# Run in powershell from the repository root
+# Run in Powershell from the repository root
 & .\bin\plink2.exe --vcf "path/to/selected_sample.GRCh37.vcf" --double-id --chr 1-22 --snps-only just-acgt --max-alleles 2 --make-bed --out "data/processed/selected_sample_autosomes_GRCh37"
 ```
 
