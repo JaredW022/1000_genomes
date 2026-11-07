@@ -1,6 +1,9 @@
 # Local agent instructions
 /AGENTS.md
 
+# Local JupyterLab edit history
+/.jupyter_ystore.db
+
 # Local PLINK executable
 /bin/plink2.exe
 

@@ -1,7 +1,41 @@
 part1_expression_file <- "data/raw/GD462.GeneQuantRPKM.50FN.samplename.resk10.txt.gz"
-part1_annotation_file <- "data/raw/gene_annot.txt.gz"
+part1_annotation_file <- "data/processed/gene_annot_ensembl_grch37.tsv.gz"
 part1_genotype_dir <- "data/processed/LDREF"
 part1_cis_window_bp <- 500000
+
+prepare_part1_annotation <- function() {
+  if (file.exists(part1_annotation_file)) {
+    return(invisible(NULL))
+  }
+
+  genes <- ensembldb::genes(
+    EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75,
+    columns = c(
+      "gene_id", "gene_name", "gene_biotype",
+      "seq_name", "gene_seq_start", "gene_seq_end"
+    ),
+    return.type = "data.frame"
+  )
+  genes <- genes[genes$seq_name %in% as.character(1:22), ]
+  genes <- genes[order(as.integer(genes$seq_name), genes$gene_seq_start, genes$gene_id), ]
+
+  annotation <- data.frame(
+    ID = ifelse(is.na(genes$gene_name) | genes$gene_name == "", genes$gene_id, genes$gene_name),
+    CHR = genes$seq_name,
+    START = genes$gene_seq_start,
+    STOP = genes$gene_seq_end,
+    SYM = genes$gene_id,
+    TYPE = genes$gene_biotype
+  )
+  annotation_dir <- dirname(part1_annotation_file)
+  dir.create(annotation_dir, recursive = TRUE, showWarnings = FALSE)
+  temporary_file <- tempfile(tmpdir = annotation_dir)
+  on.exit(unlink(temporary_file))
+  write_part1_table(annotation, gzfile(temporary_file))
+  if (!file.rename(temporary_file, part1_annotation_file)) {
+    stop("Could not save the annotation to ", part1_annotation_file)
+  }
+}
 
 # Save tab-separated results without quotes or row numbers.
 write_part1_table <- function(x, file) {
@@ -10,6 +44,8 @@ write_part1_table <- function(x, file) {
 
 # Load expression and annotation data, match genes, and define cis windows.
 read_part1_inputs <- function(chromosomes = 1:22) {
+  prepare_part1_annotation()
+
   # Read the expression table, preserving sample IDs.
   expression <- read.delim(
     gzfile(part1_expression_file),
@@ -35,7 +71,6 @@ read_part1_inputs <- function(chromosomes = 1:22) {
   genes$expression_row <- match(genes$SYM, expression$ensembl_id)
   genes$has_expression <- !is.na(genes$expression_row)
 
-  # TODO: Confirm annotation/BIM genome builds with the professor before the full run.
   genes$gene_start <- as.numeric(genes$START)
   genes$gene_end <- as.numeric(genes$STOP)
 
