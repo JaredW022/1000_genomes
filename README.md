@@ -23,15 +23,10 @@ install.packages("BiocManager")
 BiocManager::install(c("locuszoomr", "EnsDb.Hsapiens.v75"), update = FALSE)
 ```
 
-You can skip installing Pandoc if rendering in RStudio.
-Rendering the R makrdown files requires Pandoc. To install Pandoc for PowerShell, download and run the Windows `.msi` installer linked in the [official Pandoc installation guide](https://pandoc.org/installing.html#windows).
-The installer adds Pandoc to `PATH`. Open a new PowerShell window before rendering either notebook.
-
 Part 2 uses PLINK 2 for LD clumping against the 1000 Genomes reference panel.
 Download [PLINK 2](https://www.cog-genomics.org/plink/2.0/) and place `plink2` (`plink2.exe` for Windows) in a `bin/` folder at the repository root.
 
-If you start with raw 23andMe text, you also need `bcftools` (version 1.24) and an indexed
-GRCh37 reference FASTA.
+To convert raw 23andMe text, install `bcftools` (version 1.24).
 Source releases and build instructions are on the [official BCFtools downloads page](https://www.htslib.org/download/).
 
 ## 2. Get the input data
@@ -62,7 +57,7 @@ The default output folder is located at `data/derived/part1`. Check that `COMPLE
 
 ### Reproduce the Part 1 notebook figures
 
-Open [`R/part1.Rmd`](R/part1.Rmd) in RStudio and click **Knit**.
+Run `part1_runner_notebook.ipynb`. 
 
 ## 4. Run Part 2
 
@@ -85,8 +80,8 @@ labels and output filename.
 
 ### Reproduce the Part 2 notebook figure
 
-Open [`R/part2.Rmd`](R/part2.Rmd) in RStudio and click **Knit**.
+Run `part2_runner_notebook.ipynb`. 
 
 ## AI use
 
-OpenAI's Codex was used to help draft and debug R code, prepare figures, and verify results. I directed the analysis and reviewed the changes. See[AI_USE.md](AI_USE.md) for details.
+OpenAI's Codex was used to help draft and debug R code, prepare figures, and verify results. I directed the analysis and reviewed the changes. See [AI_USE.md](AI_USE.md) for details.
