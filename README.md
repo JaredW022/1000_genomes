@@ -10,11 +10,14 @@ Install BEDMatrix from the R console to run either analysis.
 install.packages("BEDMatrix")
 ```
 
-To render either notebook, install `rmarkdown`, as well as `ggplot2` for rendering plots.
+To run either notebook, install [JupyterLab](https://jupyter.org/install). With the `jupyter` command available in your terminal, start R from that terminal and run the following to register the R kernel and install the plotting package.
 
 ```r
-install.packages(c("rmarkdown", "ggplot2"))
+install.packages(c("IRkernel", "ggplot2"))
+IRkernel::installspec()
 ```
+
+Launch JupyterLab with `jupyter lab` from the repository root and select the **R** kernel. The notebooks use paths relative to the repository root. If `getwd()` shows that your kernel started in the repository's `R/` folder, run `setwd("..")` before running the notebook cells.
 
 Install `EnsDb.Hsapiens.v75` to prepare the Part 1 annotation and `locuszoomr` to render the notebook's regional plot.
 
@@ -75,13 +78,13 @@ file and run the PLINK command.
 & .\bin\plink2.exe --vcf "path/to/selected_sample.GRCh37.vcf" --double-id --chr 1-22 --snps-only just-acgt --max-alleles 2 --make-bed --out "data/processed/selected_sample_autosomes_GRCh37"
 ```
 
-In `R/part2.Rmd` , set your `.bim` path in `match_height_positions()` and your `.bed` path in `align_height_alleles()`.
-In the notebook's final chunk, replace `Tiffany` with your sample ID in the
+In `R/part2_runner_notebook.ipynb`, set your `.bim` path in `match_height_positions()` and your `.bed` path in `align_height_alleles()`.
+In the notebook's final cell, replace `Tiffany` with your sample ID in the
 labels and output filename.
 
 ### Reproduce the Part 2 notebook figure
 
-Run `part2_runner_notebook.ipynb`. 
+Run `R/part2_runner_notebook.ipynb` with the notebook's working directory set to the repository root.
 
 ## AI use
 
